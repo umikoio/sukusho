@@ -8,7 +8,8 @@ Sukusho is a utility that saves your screenshot history in memory, so if you nee
 
 You may also notice there isn' a dock icon. You'll find Sukusho in the top menu bar. You can manage your screenshots there. Sukusho was created to be very simple and not cause any obstructions to daily operations.
 
-> [!IMPORTANT] While Sukusho is safe to use, works fully offline, and has no collected analytics whatsoever built-in, I've decided to not sign the app. This does require a minor small step on your part. You'll find instructions below.
+> [!IMPORTANT]
+> While Sukusho is safe to use, works fully offline, and has no collected analytics whatsoever built-in, I've decided to not sign the app. This does require a minor small step on your part. You'll find instructions below.
 
 NOTE: Sekusho is not currently compatible with the default MacOS screenshot utility or screenshot shortcuts. You must use Sekusho directly to take and save screenshots. I have these on the backlog.
 
