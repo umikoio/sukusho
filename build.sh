@@ -7,7 +7,7 @@
 
 VERSION="0.1.0"
 
-APP_BUNDLE="sukusho.app"
+APP_BUNDLE="Sukusho.app"
 ZIP_BUNDLE="Sukusho_v$VERSION.zip"
 APP_EXE="$APP_BUNDLE/Contents/MacOS/Sukusho"
 
