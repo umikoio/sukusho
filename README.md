@@ -1,5 +1,5 @@
 <div align="center">
-  <img width="45%" src="AppIcon.png" />
+  <img width="40%" src="assets/AppIcon.png" />
   <h1>Sukusho</h1>
   <p>The native screenshot history manager for MacOS</p>
 </div>

@@ -105,6 +105,19 @@ struct SukushoApp: App {
                             .buttonStyle(.bordered)
                     }
                 }
+
+                Divider()
+
+                // Learn more about this wonderful program
+                Button("About Sukusho") {
+                    AboutWindowController.shared.show()
+                }
+
+                // We should probably let the user escape
+                Button("Quit Sukusho") {
+                    NSApp.terminate(nil)
+                }
+                .keyboardShortcut("q")
             }
             .padding(12)
         }

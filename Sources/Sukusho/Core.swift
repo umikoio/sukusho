@@ -18,6 +18,14 @@ struct ScreenshotItem: Identifiable, Equatable {
     let capturedAt: Date
 }
 
+/// Attempt to resolve CoreGraphics permission dynamically (/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics)
+private func dlsymUnsafe<T>(_ name: String) -> T? {
+    guard let handle = dlopen("/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics", RTLD_LAZY),
+          let sym = dlsym(handle, name) else { return nil }
+
+    return unsafeBitCast(sym, to: T.self)
+}
+
 /// Manage the entire screenshot logic here
 final class ScreenshotManager: ObservableObject {
     // We should always show the most recent screenshot at the top
@@ -192,12 +200,69 @@ final class ScreenshotManager: ObservableObject {
     }
 }
 
-/// Attempt to resolve CoreGraphics permission dynamically (/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics)
-private func dlsymUnsafe<T>(_ name: String) -> T? {
-    guard let handle = dlopen("/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics", RTLD_LAZY),
-          let sym = dlsym(handle, name) else { return nil }
+/// Handles the logic for the about window
+final class AboutWindowController: NSWindowController {
+    static let shared = AboutWindowController()
 
-    return unsafeBitCast(sym, to: T.self)
+    private override init(window: NSWindow?) {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 600, height: 300),
+            styleMask: [.titled, .closable, .miniaturizable],
+            backing: .buffered,
+            defer: false
+        )
+
+        window.title = "About Sukusho"
+        window.isReleasedWhenClosed = false
+        window.center()
+
+        let hosting = NSHostingView(rootView: AboutView())
+        hosting.frame = window.contentView?.bounds ?? .zero
+        hosting.autoresizingMask = [.width, .height]
+        window.contentView = hosting
+
+        super.init(window: window)
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    func show() {
+        NSApp.activate(ignoringOtherApps: true)
+        window?.makeKeyAndOrderFront(nil)
+    }
+}
+
+/*
+    Sukusho Views
+*/
+
+/// A separate window to show "About" information for the developer and app
+struct AboutView: View {
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 64, height: 64)
+                .cornerRadius(12)
+
+            Text("Sukusho").font(.title2).bold()
+            Text("Lightweight MacOS menu bar screenshot manager. Stores the last 10 screenshots in memory; save only what you want!")
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.secondary)
+
+            Divider()
+
+            HStack {
+                Text("Version 1.0.0").font(.footnote)
+                Spacer()
+                Button("Close") { NSApp.keyWindow?.close() }
+                    .keyboardShortcut(.cancelAction)
+            }
+        }
+        .padding(20)
+        .frame(width: 360)
+    }
 }
 
 /// Handles the visual values for the app
@@ -219,7 +284,7 @@ struct HistoryRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(dateString(item.capturedAt)).font(.subheadline)
                 HStack(spacing: 8) {
-                    Button("Save…") { onSave(item) }
+                    Button("Save") { onSave(item) }
                     Button("Quick Save") { onQuickSave(item) }
                 }
                 .buttonStyle(.borderless)

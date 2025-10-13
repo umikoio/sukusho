@@ -10,16 +10,16 @@ function build_app() {
 
 function configure_icon() {
     mkdir -p tmp.iconset
-    sips -z 16 16 AppIcon.png --out tmp.iconset/icon_16x16.png
-    sips -z 32 32 AppIcon.png --out tmp.iconset/icon_16x16@2x.png
-    sips -z 32 32 AppIcon.png --out tmp.iconset/icon_32x32.png
-    sips -z 64 64 AppIcon.png --out tmp.iconset/icon_32x32@2x.png
-    sips -z 128 128 AppIcon.png --out tmp.iconset/icon_128x128.png
-    sips -z 256 256 AppIcon.png --out tmp.iconset/icon_128x128@2x.png
-    sips -z 256 256 AppIcon.png --out tmp.iconset/icon_256x256.png
-    sips -z 512 512 AppIcon.png --out tmp.iconset/icon_256x256@2x.png
-    sips -z 512 512 AppIcon.png --out tmp.iconset/icon_512x512.png
-    cp AppIcon.png tmp.iconset/icon_512x512@2x.png
+    sips -z 16 16 assets/AppIcon.png --out tmp.iconset/icon_16x16.png
+    sips -z 32 32 assets/AppIcon.png --out tmp.iconset/icon_16x16@2x.png
+    sips -z 32 32 assets/AppIcon.png --out tmp.iconset/icon_32x32.png
+    sips -z 64 64 assets/AppIcon.png --out tmp.iconset/icon_32x32@2x.png
+    sips -z 128 128 assets/AppIcon.png --out tmp.iconset/icon_128x128.png
+    sips -z 256 256 assets/AppIcon.png --out tmp.iconset/icon_128x128@2x.png
+    sips -z 256 256 assets/AppIcon.png --out tmp.iconset/icon_256x256.png
+    sips -z 512 512 assets/AppIcon.png --out tmp.iconset/icon_256x256@2x.png
+    sips -z 512 512 assets/AppIcon.png --out tmp.iconset/icon_512x512.png
+    cp assets/AppIcon.png tmp.iconset/icon_512x512@2x.png
     iconutil -c icns tmp.iconset -o "$APP_BUNDLE/Contents/Resources/AppIcon.icns"
     rm -rf tmp.iconset
 
@@ -29,6 +29,12 @@ function configure_icon() {
 }
 
 function generate_bundle() {
+    if [[ -d "$APP_BUNDLE" ]]; then
+        echo "Remove old app bundle..."
+        rm -r $APP_BUNDLE
+    fi
+    
+
     if [[ ! -d "$APP_BUNDLE" ]]; then
         echo "Creating app bundle..."
         mkdir $APP_BUNDLE
