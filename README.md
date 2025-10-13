@@ -15,6 +15,8 @@ Install with a single command:
 curl https://umiko.io/sukusho.sh | sh
 ```
 
+Once the installation script has completed, you should see `Sukusho v0.x.x successfully installed`. From there, just head over to the `/Applications` directory and run Sukusho!
+
 > [!IMPORTANT]
 > The install script above adds Sukusho to your quarantine settings.
 > While Sukusho is safe to use, works fully offline, and has no analytics whatsoever built-in, I've decided to not sign the app. This may change, but for now, it's installable via the script above.
