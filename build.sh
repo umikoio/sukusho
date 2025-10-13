@@ -5,7 +5,10 @@
 #                                                        #
 ##########################################################
 
+VERSION="0.1.0"
+
 APP_BUNDLE="sukusho.app"
+ZIP_BUNDLE="Sukusho_v$VERSION.zip"
 APP_EXE="$APP_BUNDLE/Contents/MacOS/Sukusho"
 
 function build_app() {
@@ -37,23 +40,23 @@ function configure_icon() {
 
 function generate_bundle() {
     if [[ -d "$APP_BUNDLE" ]]; then
-        echo "Remove old app bundle..."
+        echo "Removing outdated app bundle directory"
         rm -r $APP_BUNDLE
     fi
 
     if [[ ! -d "$APP_BUNDLE" ]]; then
-        echo "Creating app bundle..."
+        echo "Creating fresh app bundle directory"
         mkdir $APP_BUNDLE
     fi
 
-    echo "Seting up bundle environment..."
+    echo "Seting up bundle environment"
     mkdir -p "$APP_BUNDLE/Contents/MacOS" "$APP_BUNDLE/Contents/Resources"
     cp -f Info.plist "$APP_BUNDLE/Contents/"
 
-    echo "Building icons..."
+    echo "Building icons"
     configure_icon
 
-    echo "Building application..."
+    echo "Building application"
     build_app
 
     if [[ -f "Sukusho" ]]; then
@@ -62,6 +65,11 @@ function generate_bundle() {
     fi
 
     echo "Successfully built $APP_BUNDLE"
+
+    if [[ $1="--zip" ]]; then
+        echo "Zipping for release"
+        zip -r "$ZIP_BUNDLE" "$APP_BUNDLE"
+    fi
 }
 
 generate_bundle
