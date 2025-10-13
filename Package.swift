@@ -4,8 +4,7 @@ let package = Package(
     name: "Sukusho",
     platforms: [.macOS(.v13)],
     products: [
-        .executable(name: "Sukusho", targets: ["Sukusho"]),
-        .library(name: "SukushoCore", targets: ["SukushoCore"])
+        .executable(name: "Sukusho", targets: ["Sukusho"])
     ],
     dependencies: [],
     targets: [

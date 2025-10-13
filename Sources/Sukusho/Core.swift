@@ -254,14 +254,14 @@ struct AboutView: View {
             Divider()
 
             HStack {
-                Text("Version 1.0.0").font(.footnote)
+                Text("Version 0.1.0").font(.footnote)
                 Spacer()
                 Button("Close") { NSApp.keyWindow?.close() }
                     .keyboardShortcut(.cancelAction)
             }
         }
         .padding(20)
-        .frame(width: 360)
+        .frame(width: 400)
     }
 }
 
@@ -277,7 +277,7 @@ struct HistoryRow: View {
                 .resizable()
                 .interpolation(.high)
                 .aspectRatio(contentMode: .fit)
-                .frame(width: 90, height: 56)
+                .frame(width: 90, height: 60)
                 .cornerRadius(8)
                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(.quaternary, lineWidth: 1))
 

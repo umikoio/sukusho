@@ -81,7 +81,7 @@ struct SukushoApp: App {
                         systemImage: "rectangle.dashed",
                         description: Text("Click \"Capture Screen\" to start")
                     )
-                    .frame(width: 320)
+                    .frame(width: 400)
                 } else {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 6) {
@@ -96,7 +96,7 @@ struct SukushoApp: App {
                         }
                         .padding(.vertical, 4)
                     }
-                    .frame(width: 360, height: 420)
+                    .frame(width: 400, height: 400)
 
                     // Callback to clear all screenshots from memory
                     HStack {

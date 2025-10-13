@@ -1,3 +1,10 @@
+##########################################################
+#                                                        #
+# Author: Umiko (https://github.com/umikoio)             #
+# Project: Sukusho (https://github.com/umikoio/sukusho)  #
+#                                                        #
+##########################################################
+
 APP_BUNDLE="sukusho.app"
 APP_EXE="$APP_BUNDLE/Contents/MacOS/Sukusho"
 
@@ -33,7 +40,6 @@ function generate_bundle() {
         echo "Remove old app bundle..."
         rm -r $APP_BUNDLE
     fi
-    
 
     if [[ ! -d "$APP_BUNDLE" ]]; then
         echo "Creating app bundle..."
