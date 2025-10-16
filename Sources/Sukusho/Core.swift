@@ -10,6 +10,7 @@ import CoreGraphics
 import UniformTypeIdentifiers
 import Carbon
 import ScreenCaptureKit
+import Quartz
 
 // This struct is configured and managed for each image
 /// The information collected when taking a screenshot
@@ -342,6 +343,51 @@ final class ScreenshotManager: ObservableObject {
     }
 }
 
+/// Extended functionality for the screenshot manager (but not directly associated with it)
+extension ScreenshotManager {
+    private static let ql = QuickLookController()
+
+    /// Preview the most recent screenshot (if any) via "Quick Look"
+    func quickLookLatest() {
+        guard let first = history.first else { return }
+        quickLook(first)
+    }
+
+    /// Preview a specific screenshot via "Quick Look"
+    func quickLook(_ item: ScreenshotItem) {
+        // Write the image to a temporary file for QL
+        let tmpDir = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true).appendingPathComponent("SukushoPreview", isDirectory: true)
+        try? FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true)
+        let url = tmpDir.appendingPathComponent(defaultFileName(for: item))
+        writePNG(item.image, to: url)
+
+        // Open with "Quick Look"
+        Self.ql.urls = [url]
+
+        if let panel = QLPreviewPanel.shared() {
+            panel.dataSource = Self.ql
+            panel.delegate = Self.ql
+            panel.makeKeyAndOrderFront(nil)
+        }
+    }
+}
+
+
+/// Handles the "Quick Look" logic
+final class QuickLookController: NSObject, QLPreviewPanelDataSource, QLPreviewPanelDelegate {
+    fileprivate var urls: [URL] = []
+
+    /// Count the number of items possible for the preview
+    func numberOfPreviewItems(in panel: QLPreviewPanel!) -> Int {
+        urls.count
+    }
+
+    /// Create the preview panel
+    func previewPanel(_ panel: QLPreviewPanel!, previewItemAt index: Int) -> QLPreviewItem! {
+        urls[index] as NSURL
+    }
+}
+
 /// Handles the logic for the about window
 final class AboutWindowController: NSWindowController {
     static let shared = AboutWindowController()
@@ -412,6 +458,7 @@ struct HistoryRow: View {
     let item: ScreenshotItem
     let onSave: (ScreenshotItem) -> Void
     let onQuickSave: (ScreenshotItem) -> Void
+    var onQuickLook: ((ScreenshotItem) -> Void)? = nil
 
     var body: some View {
         HStack(spacing: 10) {
@@ -422,7 +469,10 @@ struct HistoryRow: View {
                 .frame(width: 90, height: 60)
                 .cornerRadius(8)
                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(.quaternary, lineWidth: 1))
-
+                // Also added in a double-click -> "Quick Look"
+                .onTapGesture(count: 2) {
+                    onQuickLook?(item)
+                }
             VStack(alignment: .leading, spacing: 4) {
                 Text(dateString(item.capturedAt)).font(.subheadline)
                 HStack(spacing: 8) {
