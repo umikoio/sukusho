@@ -440,7 +440,7 @@ struct AboutView: View {
             Divider()
 
             HStack {
-                Text("Version 0.1.0").font(.footnote)
+                Text("Version 0.2.0").font(.footnote)
                 Spacer()
                 Button("Close") { NSApp.keyWindow?.close() }
                     .keyboardShortcut(.cancelAction)
