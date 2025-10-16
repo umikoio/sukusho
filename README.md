@@ -26,7 +26,7 @@ If you don't want to manually click any buttons or open the modal, a few keyboar
 | `⌘ + N`  | Take a screenshot    |
 | `⌘ + Q`  | Quit the application |
 
-NOTE: Sekusho must be the active foreground application. You can just click the Sekusho dock icon to make it the active application.
+NOTE: Sukusho must be the active foreground application. You can just click the Sukusho dock icon to make it the active application.
 
 > [!IMPORTANT]
 > The install script above adds Sukusho to your quarantine settings.
