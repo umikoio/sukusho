@@ -14,8 +14,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         DispatchQueue.main.async {
             guard let manager = self.manager else { return }
             if !manager.isScreenRecordingPermitted {
-                manager.requestScreenRecordingPermission()
-
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
                     manager.openScreenRecordingPrefs()
                 }
@@ -39,12 +37,23 @@ struct SukushoApp: App {
         MenuBarExtra("Sukusho", systemImage: manager.isScreenRecordingPermitted ? "camera" : "camera.slash") {
             VStack(alignment: .leading, spacing: 10) {
 
-                // Capture screenshot button
-                Button {
-                    manager.captureScreen()
-                } label: {
-                    Label("Capture Screen", systemImage: "camera.circle")
+                HStack {
+                    // Capture screenshot button
+                    Button {
+                        manager.captureScreen()
+                    } label: {
+                        Label("Capture Screen", systemImage: "camera.circle")
+                    }
+                    .keyboardShortcut("n", modifiers: .command)
+
+                    // View the most recent screenshot taken
+                    Button {
+                        manager.quickLookLatest()
+                    } label: {
+                        Label("Quick Look Last", systemImage: "eye")
+                    }
                 }
+
 
                 // This shouldn't happen, but if permissions still aren't granted, we have a fallback
                 if !manager.isScreenRecordingPermitted {
@@ -81,7 +90,7 @@ struct SukushoApp: App {
                         systemImage: "rectangle.dashed",
                         description: Text("Click \"Capture Screen\" to start")
                     )
-                    .frame(width: 400)
+                    .frame(width: 300)
                 } else {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 6) {
@@ -89,38 +98,59 @@ struct SukushoApp: App {
                                 HistoryRow(
                                     item: item,
                                     onSave: manager.save,
-                                    onQuickSave: manager.quickSave
+                                    onQuickSave: manager.quickSave,
+                                    onQuickLook: manager.quickLook
                                 )
                                 Divider()
                             }
                         }
                         .padding(.vertical, 4)
                     }
-                    .frame(width: 400, height: 400)
+                    .frame(width: 300, height: 200)
 
                     // Callback to clear all screenshots from memory
                     HStack {
                         Spacer()
-                        Button("Clear History") { manager.clearHistory() }
-                            .buttonStyle(.bordered)
+                        Button("Clear History") {
+                            manager.clearHistory()
+                        }
+                        .buttonStyle(.bordered)
                     }
                 }
 
                 Divider()
 
-                // Learn more about this wonderful program
-                Button("About Sukusho") {
-                    AboutWindowController.shared.show()
-                }
+                HStack {
+                    // Learn more about this wonderful program
+                    Button("About Sukusho") {
+                        AboutWindowController.shared.show()
+                    }
+                    .buttonStyle(.bordered)
 
-                // We should probably let the user escape
-                Button("Quit Sukusho") {
-                    NSApp.terminate(nil)
+                    // Quit application
+                    Button("Quit Sukusho") {
+                        NSApp.terminate(nil)
+                    }
+                    .buttonStyle(.bordered)
                 }
-                .keyboardShortcut("q")
             }
             .padding(12)
         }
         .menuBarExtraStyle(.window)
+        .commands {
+            CommandGroup(after: .appSettings) {
+                Button("Capture Screen") {
+                    manager.captureScreen()
+                }
+                .keyboardShortcut("n", modifiers: .command)
+            }
+
+            CommandGroup(after: .appTermination) {
+                Button("Quit Sukusho") {
+                    NSApp.terminate(nil)
+                }
+                .keyboardShortcut("q", modifiers: .command)
+            }
+        }
     }
 }
