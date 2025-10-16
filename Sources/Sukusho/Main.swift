@@ -36,13 +36,24 @@ struct SukushoApp: App {
     var body: some Scene {
         MenuBarExtra("Sukusho", systemImage: manager.isScreenRecordingPermitted ? "camera" : "camera.slash") {
             VStack(alignment: .leading, spacing: 10) {
-                // Capture screenshot button
-                Button {
-                    manager.captureScreen()
-                } label: {
-                    Label("Capture Screen", systemImage: "camera.circle")
+
+                HStack {
+                    // Capture screenshot button
+                    Button {
+                        manager.captureScreen()
+                    } label: {
+                        Label("Capture Screen", systemImage: "camera.circle")
+                    }
+                    .keyboardShortcut("n", modifiers: .command)
+
+                    // Right under the "Capture Screen" button is a nice spot:
+                    Button {
+                        manager.quickLookLatest()
+                    } label: {
+                        Label("Quick Look Last", systemImage: "eye")
+                    }
                 }
-                .keyboardShortcut("n", modifiers: .command)
+
 
                 // This shouldn't happen, but if permissions still aren't granted, we have a fallback
                 if !manager.isScreenRecordingPermitted {
@@ -79,7 +90,7 @@ struct SukushoApp: App {
                         systemImage: "rectangle.dashed",
                         description: Text("Click \"Capture Screen\" to start")
                     )
-                    .frame(width: 400)
+                    .frame(width: 300)
                 } else {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 6) {
@@ -87,14 +98,15 @@ struct SukushoApp: App {
                                 HistoryRow(
                                     item: item,
                                     onSave: manager.save,
-                                    onQuickSave: manager.quickSave
+                                    onQuickSave: manager.quickSave,
+                                    onQuickLook: manager.quickLook
                                 )
                                 Divider()
                             }
                         }
                         .padding(.vertical, 4)
                     }
-                    .frame(width: 400, height: 400)
+                    .frame(width: 300, height: 200)
 
                     // Callback to clear all screenshots from memory
                     HStack {
@@ -108,16 +120,18 @@ struct SukushoApp: App {
 
                 Divider()
 
-                // Learn more about this wonderful program
-                Button("About Sukusho") {
-                    AboutWindowController.shared.show()
-                }
+                HStack {
+                    // Learn more about this wonderful program
+                    Button("About Sukusho") {
+                        AboutWindowController.shared.show()
+                    }
+                    .buttonStyle(.bordered)
 
-                Divider()
-
-                // Quit application
-                Button("Quit Sukusho") {
-                    NSApp.terminate(nil)
+                    // Quit application
+                    Button("Quit Sukusho") {
+                        NSApp.terminate(nil)
+                    }
+                    .buttonStyle(.bordered)
                 }
             }
             .padding(12)
