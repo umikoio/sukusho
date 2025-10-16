@@ -17,6 +17,17 @@ curl https://umiko.io/sukusho.sh | sh
 
 Once the installation script has completed, you should see `Sukusho v0.x.x successfully installed`. From there, just head over to the `/Applications` directory and run Sukusho!
 
+### Keyboard Shortcuts
+
+If you don't want to manually click any buttons or open the modal, a few keyboard shortcuts are available:
+
+| Shortcut | Action               |
+| -------- | -------------------- |
+| `⌘ + N`  | Take a screenshot    |
+| `⌘ + Q`  | Quit the application |
+
+NOTE: Sekusho must be the active foreground application. You can just click the Sekusho dock icon to make it the active application.
+
 > [!IMPORTANT]
 > The install script above adds Sukusho to your quarantine settings.
 > While Sukusho is safe to use, works fully offline, and has no analytics whatsoever built-in, I've decided to not sign the app. This may change, but for now, it's installable via the script above.
