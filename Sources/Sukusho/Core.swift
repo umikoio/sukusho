@@ -9,6 +9,7 @@ import Combine
 import CoreGraphics
 import UniformTypeIdentifiers
 import Carbon
+import ScreenCaptureKit
 
 // This struct is configured and managed for each image
 /// The information collected when taking a screenshot
@@ -49,13 +50,6 @@ final class ScreenshotManager: ObservableObject {
         return true
     }
 
-    /// If permissions aren't met, we need to request them
-    func requestScreenRecordingPermission() {
-        if let fn = dlsymUnsafe("CGRequestScreenCaptureAccess") as Optional<@convention(c) () -> Bool> {
-            _ = fn()
-        }
-    }
-
     /// Open the MacOS privacy panel for the user
     func openScreenRecordingPrefs() {
         if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
@@ -63,30 +57,154 @@ final class ScreenshotManager: ObservableObject {
         }
     }
 
-    /// Perform the screenshot capture
-    func captureScreen() {
-        // A guard to protect from capturing a screenshot without proper permissions
-        guard isScreenRecordingPermitted else {
-            requestScreenRecordingPermission()
+    // Moving forward, we only support MacOS 14+ (this way we can use ScreenCaptureKit and some of the benefits that come with it)
+    @available(macOS 14.0, *)
+    /// The core function for capturing full screen screenshots
+    private func captureFullDisplayCGImage(excludingSelfWindows: Bool = true, sourceRect: CGRect? = nil) async throws -> CGImage {
+        let content = try await SCShareableContent.current
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                self.openScreenRecordingPrefs()
-            }
-
-            return
+        // I would be surprised if this ever happens, but if we can't find a display, we have an edge case for it
+        guard let display = content.displays.first else {
+            throw NSError(domain: "Sukusho", code: 1, userInfo: [NSLocalizedDescriptionKey: "No displays found"])
         }
 
-        let rect = CGRect.infinite
+        // We'll use the bundle identity to hide the modal window
+        let myBundleID = Bundle.main.bundleIdentifier
 
-        // TODO: Replace with ScreenCaptureKit on macOS 14+
-        let imageRef = CGWindowListCreateImage(rect, .optionOnScreenOnly, kCGNullWindowID, [.bestResolution, .boundsIgnoreFraming])
+        // Exclude our modal window (but make sure the content behind it still shows in the screenshot)
+        let myWindows: [SCWindow] =
+            excludingSelfWindows
+            ? content.windows.filter { $0.owningApplication?.bundleIdentifier == myBundleID }
+            : []
 
-        // Handles the image reference, size, and assigns the appropiate data type for ScreenshotItem
-        guard let cg = imageRef else { return }
+        let filter = SCContentFilter(display: display, excludingWindows: myWindows)
+        let config = SCStreamConfiguration()
+
+        // Trying to improve the image quality, but it's been varying recently
+        // I'll come back to this later
+        if let r = sourceRect {
+            // We use a full-screen rectangle to capture the entire screen's region
+            config.sourceRect = r
+            // The values below designate the full screen window
+            config.width  = Int(r.width.rounded(.down))
+            config.height = Int(r.height.rounded(.down))
+        } else {
+            // Fallback
+            config.width  = display.width
+            config.height = display.height
+        }
+
+        config.pixelFormat = kCVPixelFormatType_32BGRA
+
+        // Don't capture cursor
+        // Maybe we add a settings window for users?
+        config.showsCursor = false
+
+        let stream = SCStream(filter: filter, configuration: config, delegate: nil)
+
+        // Build a capture queue, with a similar label to our bundle identity
+        let outputQueue = DispatchQueue(label: "com.sukusho.capture.output")
+
+        /// Only capture a single frame from the stream output
+        final class OneFrameReceiver: NSObject, SCStreamOutput {
+            let finish: (Result<CGImage, Error>) -> Void
+            let context: CIContext
+
+            init(context: CIContext, finish: @escaping (Result<CGImage, Error>) -> Void) {
+                self.context = context
+                self.finish  = finish
+            }
+
+            /// Construct a stream buffer to read (this will only capture a single frame and stop immediately after)
+            func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of outputType: SCStreamOutputType) {
+                guard outputType == .screen, let pixelBuffer = sampleBuffer.imageBuffer else { return }
+                let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
+
+                if let cg = context.createCGImage(ciImage, from: ciImage.extent) {
+                    _ = try? stream.removeStreamOutput(self, type: .screen)
+                    finish(.success(cg))
+                }
+            }
+
+            /// Verify stream errors
+            func stream(_ stream: SCStream, didStopWithError error: Error) {
+                finish(.failure(error))
+            }
+        }
+
+        let ciContext = CIContext(options: [
+            .useSoftwareRenderer: false,
+            .highQualityDownsample: false,
+            .cacheIntermediates: false,
+            .outputColorSpace: CGColorSpaceCreateDeviceRGB(),
+            .workingColorSpace: CGColorSpaceCreateDeviceRGB()
+        ])
+
+        // Running concurrency based validation
+        return try await withCheckedThrowingContinuation { continuation in
+            var finished = false
+            var receiverRef: OneFrameReceiver?
+
+            /// Verify the stream is finished and a result was produced
+            func finish(_ result: Result<CGImage, Error>) {
+                guard !finished else { return }
+                finished = true
+
+                // Capture finished, stop capture and share result
+                Task {
+                    try? await stream.stopCapture()
+                    receiverRef = nil
+                    continuation.resume(with: result)
+                }
+            }
+
+            let receiver = OneFrameReceiver(context: ciContext, finish: finish)
+            receiverRef = receiver
+
+            // If any issues are found during capture, we need to handle those
+            do {
+                try stream.addStreamOutput(receiver, type: .screen, sampleHandlerQueue: outputQueue)
+                try stream.startCapture()
+            } catch {
+                finish(.failure(error))
+                return
+            }
+
+            // If unable to capture the first frame, throw an error
+            DispatchQueue.global().asyncAfter(deadline: .now() + 5.0) {
+                if !finished {
+                    finish(.failure(NSError(domain: "Sukusho", code: 2, userInfo: [
+                        NSLocalizedDescriptionKey: "Timed out waiting for the first captured frame"
+                    ])))
+                }
+            }
+        }
+    }
+
+    /// Perform the screenshot capture
+    func captureScreen() {
+        // Main task runner and history manager for the screen capture
+        if #available(macOS 14.0, *) {
+            Task { @MainActor in
+                do {
+                    let cg = try await captureFullDisplayCGImage()
+                    self.pushToHistory(self.nsImage(from: cg))
+                } catch {
+                    NSAlert(error: error).runModal()
+                }
+            }
+        }
+    }
+
+    /// Slightly improved nsImage function to manage the data being pushed to the history manager
+    private func nsImage(from cg: CGImage) -> NSImage {
         let size = NSSize(width: cg.width, height: cg.height)
-        let nsImage = NSImage(cgImage: cg, size: size)
+        return NSImage(cgImage: cg, size: size)
+    }
 
-        // Intake all of the screenshot data for the history array
+    /// Intake all of the screenshot data for the history array
+    @MainActor
+    private func pushToHistory(_ nsImage: NSImage) {
         let item = ScreenshotItem(image: nsImage, capturedAt: Date())
 
         // New screenshot item appended
@@ -124,7 +242,7 @@ final class ScreenshotManager: ObservableObject {
         // You can set the quick save directory within the GUI as well
         let directory = preferredSaveDirectory ?? defaultPicturesDirectory()
 
-        // We use a directory called "Sekusho" to contain all images created by the app
+        // We use a directory called "Sukusho" to contain all images created by the app
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let url = directory.appendingPathComponent(defaultFileName(for: item))
         writePNG(item.image, to: url)
@@ -174,15 +292,39 @@ final class ScreenshotManager: ObservableObject {
         completion(resp)
     }
 
-    /// Handles the actual file writing process (since it's only PNG, it's pretty simple)
+    /// Handles the actual file writing process (PNG, lossless, simple)
     private func writePNG(_ image: NSImage, to url: URL) {
-        guard let tiffData = image.tiffRepresentation,
-              let bitmap = NSBitmapImageRep(data: tiffData),
-              let png = bitmap.representation(using: .png, properties: [:]) else { return }
-        do {
-            try png.write(to: url)
-        } catch {
-            NSAlert(error: error).runModal()
+        // CGImage seems to offer the best solution for physical images (no scaling)
+        if let cg = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+            let rep = NSBitmapImageRep(cgImage: cg)
+            // Should stop any DPI weirdness
+            rep.size = NSSize(width: rep.pixelsWide, height: rep.pixelsHigh)
+
+            // Handles the actual PNG creation
+            if let png = rep.representation(using: .png, properties: [:]) {
+                do {
+                    try png.write(to: url)
+                } catch {
+                    NSAlert(error: error).runModal()
+                }
+
+                return
+            }
+        }
+
+        // A quick fallback (TIFF)
+        // This still forces the same aspect ratio, but may be slightly worse quality
+        guard let tiff = image.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff) else { return }
+
+        // Force to match the exact pixel dimensions
+        rep.size = NSSize(width: rep.pixelsWide, height: rep.pixelsHigh)
+
+        if let png = rep.representation(using: .png, properties: [:]) {
+            do {
+                try png.write(to: url)
+            } catch {
+                NSAlert(error: error).runModal()
+            }
         }
     }
 
