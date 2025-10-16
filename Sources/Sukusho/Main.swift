@@ -14,8 +14,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         DispatchQueue.main.async {
             guard let manager = self.manager else { return }
             if !manager.isScreenRecordingPermitted {
-                manager.requestScreenRecordingPermission()
-
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
                     manager.openScreenRecordingPrefs()
                 }

@@ -1,8 +1,10 @@
+// swift-tools-version: 6.1
 import PackageDescription
 
 let package = Package(
     name: "Sukusho",
-    platforms: [.macOS(.v13)],
+    defaultLocalization: "en",
+    platforms: [.macOS(.v14)],
     products: [
         .executable(name: "Sukusho", targets: ["Sukusho"])
     ],
@@ -20,7 +22,7 @@ let package = Package(
         ),
         .executableTarget(
             name: "Sukusho",
-            dependencies: ["SukushoCore"],
+            path: "Sources/Sukusho",
             linkerSettings: [
                 .linkedFramework("AppKit"),
                 .linkedFramework("SwiftUI"),
