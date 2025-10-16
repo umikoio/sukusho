@@ -79,22 +79,16 @@ final class ScreenshotManager: ObservableObject {
             : []
 
         let filter = SCContentFilter(display: display, excludingWindows: myWindows)
+
+        // Fix the pixel scaling
+        // ScreenCaptureKit has a quirk, where if you're using a retina display, it can sometimes not render the full resolution
+        // So there's now some built-in helpers to make sure that if the user has a high resolution display, it renders correctly
+        // It seems this is due to the default being the logical pixels, but we need the native pixels to make sure it's not scaled down
+        let scale = CGFloat(filter.pointPixelScale)
         let config = SCStreamConfiguration()
 
-        // Trying to improve the image quality, but it's been varying recently
-        // I'll come back to this later
-        if let r = sourceRect {
-            // We use a full-screen rectangle to capture the entire screen's region
-            config.sourceRect = r
-            // The values below designate the full screen window
-            config.width  = Int(r.width.rounded(.down))
-            config.height = Int(r.height.rounded(.down))
-        } else {
-            // Fallback
-            config.width  = display.width
-            config.height = display.height
-        }
-
+        config.width  = Int((CGFloat(display.width)  * scale).rounded(.down))
+        config.height = Int((CGFloat(display.height) * scale).rounded(.down))
         config.pixelFormat = kCVPixelFormatType_32BGRA
 
         // Don't capture cursor
@@ -189,6 +183,7 @@ final class ScreenshotManager: ObservableObject {
             Task { @MainActor in
                 do {
                     let cg = try await captureFullDisplayCGImage()
+                    // print("Captured: \(cg.width)x\(cg.height)")
                     self.pushToHistory(self.nsImage(from: cg))
                 } catch {
                     NSAlert(error: error).runModal()
@@ -372,6 +367,9 @@ extension ScreenshotManager {
     }
 }
 
+/*
+    Sukusho Controllers
+*/
 
 /// Handles the "Quick Look" logic
 final class QuickLookController: NSObject, QLPreviewPanelDataSource, QLPreviewPanelDelegate {
@@ -464,15 +462,13 @@ struct HistoryRow: View {
         HStack(spacing: 10) {
             Image(nsImage: item.image)
                 .resizable()
-                .interpolation(.high)
+                .interpolation(.none)
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 90, height: 60)
                 .cornerRadius(8)
                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(.quaternary, lineWidth: 1))
                 // Also added in a double-click -> "Quick Look"
-                .onTapGesture(count: 2) {
-                    onQuickLook?(item)
-                }
+                .onTapGesture(count: 2) { onQuickLook?(item) }
             VStack(alignment: .leading, spacing: 4) {
                 Text(dateString(item.capturedAt)).font(.subheadline)
                 HStack(spacing: 8) {
