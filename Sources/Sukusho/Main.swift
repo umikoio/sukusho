@@ -46,7 +46,7 @@ struct SukushoApp: App {
                     }
                     .keyboardShortcut("n", modifiers: .command)
 
-                    // Right under the "Capture Screen" button is a nice spot:
+                    // View the most recent screenshot taken
                     Button {
                         manager.quickLookLatest()
                     } label: {
