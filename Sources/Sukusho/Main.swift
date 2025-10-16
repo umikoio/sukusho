@@ -36,13 +36,13 @@ struct SukushoApp: App {
     var body: some Scene {
         MenuBarExtra("Sukusho", systemImage: manager.isScreenRecordingPermitted ? "camera" : "camera.slash") {
             VStack(alignment: .leading, spacing: 10) {
-
                 // Capture screenshot button
                 Button {
                     manager.captureScreen()
                 } label: {
                     Label("Capture Screen", systemImage: "camera.circle")
                 }
+                .keyboardShortcut("n", modifiers: .command)
 
                 // This shouldn't happen, but if permissions still aren't granted, we have a fallback
                 if !manager.isScreenRecordingPermitted {
@@ -99,8 +99,10 @@ struct SukushoApp: App {
                     // Callback to clear all screenshots from memory
                     HStack {
                         Spacer()
-                        Button("Clear History") { manager.clearHistory() }
-                            .buttonStyle(.bordered)
+                        Button("Clear History") {
+                            manager.clearHistory()
+                        }
+                        .buttonStyle(.bordered)
                     }
                 }
 
@@ -111,14 +113,30 @@ struct SukushoApp: App {
                     AboutWindowController.shared.show()
                 }
 
-                // We should probably let the user escape
+                Divider()
+
+                // Quit application
                 Button("Quit Sukusho") {
                     NSApp.terminate(nil)
                 }
-                .keyboardShortcut("q")
             }
             .padding(12)
         }
         .menuBarExtraStyle(.window)
+        .commands {
+            CommandGroup(after: .appSettings) {
+                Button("Capture Screen") {
+                    manager.captureScreen()
+                }
+                .keyboardShortcut("n", modifiers: .command)
+            }
+
+            CommandGroup(after: .appTermination) {
+                Button("Quit Sukusho") {
+                    NSApp.terminate(nil)
+                }
+                .keyboardShortcut("q", modifiers: .command)
+            }
+        }
     }
 }
