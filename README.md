@@ -17,7 +17,7 @@ curl https://umiko.io/sukusho.sh | sh
 
 Once the installation script has completed, you should see `Sukusho v0.x.x successfully installed`. From there, just head over to the `/Applications` directory and run Sukusho!
 
-Now that the project has a matured a bit, here's a screenshot taken by Sukusho:
+Here's a screenshot taken by Sukusho:
 
 <img src="assets/SukushoScreenshotExample.jpg" >
 
